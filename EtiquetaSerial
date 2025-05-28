@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Etiquetas de Seriales</title>
+    
+    <style>
+        /* --- CSS INCORPORADO --- */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Alinea al inicio verticalmente */
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .main-container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 900px; /* Ancho máximo para contener ambas secciones */
+            display: flex;
+            flex-direction: column; /* Cambia a columna para las pestañas */
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 25px;
+        }
+
+        /* Estilos de las pestañas */
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .tab-button {
+            padding: 10px 15px;
+            cursor: pointer;
+            border: none;
+            background-color: transparent;
+            font-size: 16px;
+            color: #555;
+            transition: color 0.3s ease, border-bottom 0.3s ease;
+        }
+
+        .tab-button.active {
+            color: #007bff;
+            border-bottom: 2px solid #007bff;
+            font-weight: bold;
+        }
+
+        .tab-content {
+            display: none; /* Oculta el contenido de las pestañas por defecto */
+            padding-top: 15px;
+        }
+
+        .tab-content.active {
+            display: block; /* Muestra el contenido de la pestaña activa */
+        }
+
+        /* Contenedor del formulario y resultados */
+        .form-section, .search-section {
+            display: flex;
+            gap: 20px; /* Espacio entre el formulario y el área de etiquetas */
+            flex-wrap: wrap; /* Permite que los elementos se envuelvan en pantallas pequeñas */
+        }
+
+        .form-column {
+            flex: 1; /* Ocupa el espacio disponible */
+            min-width: 300px; /* Ancho mínimo para la columna del formulario */
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: bold;
+        }
+
+        input[type="number"],
+        input[type="text"],
+        select,
+        textarea {
+            width: calc(100% - 22px);
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        input[type="text"][readonly],
+        textarea[readonly] {
+            background-color: #e9e9e9;
+            color: #777;
+            cursor: not-allowed;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px; /* Ajustado para botones multiples */
+            width: 100%;
+            margin-top: 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        /* Estilos para el área de previsualización de etiquetas */
+        .label-preview-column {
+            flex: 1; /* Ocupa el espacio disponible */
+            min-width: 350px; /* Ancho mínimo para la columna de previsualización */
+            border: 1px dashed #ccc;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+
+        .label-preview-column h3 {
+            text-align: center;
+            color: #333;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        .label-container {
+            width: 50mm; /* Ancho de la etiqueta */
+            height: 30mm; /* Alto de la etiqueta */
+            border: 1px solid #ddd;
+            margin: 5px auto; /* Centrar y espaciar */
+            box-sizing: border-box;
+            padding: 2mm; /* Pequeño padding dentro de la etiqueta */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* Espacia el contenido verticalmente */
+            align-items: center; /* Centra horizontalmente */
+            overflow: hidden; /* Evita que el contenido se salga */
+            background-color: white;
+            font-size: 8px; /* Tamaño de fuente base para la etiqueta */
+            page-break-after: always; /* Para la impresión, cada etiqueta en una nueva página */
+        }
+
+        .label-container p, .label-container h4, .label-container h5 {
+            margin: 0;
+            padding: 0;
+            text-align: center;
+            line-height: 1; /* Ajustar el interlineado */
+        }
+
+        .label-container h4 {
+            font-size: 10px; /* Código */
+            font-weight: bold;
+        }
+        .label-container h5 {
+            font-size: 7px; /* Descripción */
+            margin-bottom: 1mm;
+        }
+        .label-container .barcode-svg {
+            width: 90%; /* Ajustar el ancho del código de barras */
+            height: 12mm; /* Ajustar la altura del código de barras */
+            margin: 1mm 0;
+        }
+        .label-container .serial-text {
+            font-size: 9px; /* Serial */
+            font-weight: bold;
+            margin-top: 1mm;
+        }
+
+        #generatedSerialsList {
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+
+        #generatedSerialsList h4 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        #serialsOutput {
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #f0f0f0;
+            font-family: monospace;
+            white-space: pre-wrap; /* Mantiene saltos de línea */
+            font-size: 14px;
+        }
+
+        /* Estilos para la sección de búsqueda */
+        #searchResultList {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
+
+        .search-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            background-color: #fff;
+        }
+
+        .search-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-item-details {
+            flex-grow: 1;
+        }
+
+        .search-item-details strong {
+            display: block;
+            font-size: 1.1em;
+            color: #333;
+        }
+
+        .search-item-details span {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .search-item-actions button {
+            width: auto;
+            padding: 5px 10px;
+            font-size: 14px;
+            margin-left: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <h1>Gestión de Etiquetas de Seriales</h1>
+
+        <div class="tabs">
+            <button class="tab-button active" data-tab="generate">Generar Etiquetas</button>
+            <button class="tab-button" data-tab="search">Buscar/Reimprimir Seriales</button>
+        </div>
+
+        <div id="generate" class="tab-content active">
+            <div class="form-section">
+                <div class="form-column">
+                    <form id="materialForm">
+                        <div class="form-group">
+                            <label for="nomenclatura">Nomenclatura (0,1,2,3,5):</label>
+                            <select id="nomenclatura" name="nomenclatura" required>
+                                <option value="">Selecciona</option>
+                                <option value="0">0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="5">5</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="codigo">Código (1-5 dígitos):</label>
+                            <input type="number" id="codigo" name="codigo" min="0" max="99999" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="material">Material:</label>
+                            <input type="text" id="material" name="material" readonly>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="descripcion">Descripción:</label>
+                            <textarea id="descripcion" name="descripcion" rows="3" readonly></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="um">Unidad de Medida (UM):</label>
+                            <input type="text" id="um" name="um" readonly>
+                        </div>
+
+                        <h3>Opciones de Seriales:</h3>
+                        <div class="form-group">
+                            <label for="serialManual">Serial Individual:</label>
+                            <input type="text" id="serialManual" name="serialManual" placeholder="Ej: NS270520250001">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="serialesPegados">Pegar Seriales (uno por línea):</label>
+                            <textarea id="serialesPegados" name="serialesPegados" rows="4" placeholder="Serial1&#10;Serial2&#10;Serial3"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="correlativoInicio">Serial Correlativo (Inicio):</label>
+                            <input type="text" id="correlativoInicio" name="correlativoInicio" placeholder="Ej: NS270520250001">
+                        </div>
+                        <div class="form-group">
+                            <label for="correlativoCantidad">Cantidad de Correlativos:</label>
+                            <input type="number" id="correlativoCantidad" name="correlativoCantidad" min="1" value="1">
+                        </div>
+
+                        <div class="button-group">
+                            <button type="button" id="generateAndSaveButton">Generar y Guardar</button>
+                            <button type="button" id="generateAndPrintButton">Generar e Imprimir</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="label-preview-column">
+                    <h3>Previsualización de Etiquetas</h3>
+                    <div id="labelsPreviewContainer">
+                        </div>
+                </div>
+            </div>
+
+            <div id="generatedSerialsList">
+                <h4>Seriales Generados en Sesión:</h4>
+                <div id="serialsOutput">
+                    </div>
+            </div>
+        </div>
+
+        <div id="search" class="tab-content">
+            <div class="search-section">
+                <div class="form-column">
+                    <h3>Buscar Seriales Registrados</h3>
+                    <div class="form-group">
+                        <label for="searchSerialInput">Buscar por Serial (o parte de él):</label>
+                        <input type="text" id="searchSerialInput" placeholder="Ej: NS27052025">
+                    </div>
+                    <div class="form-group">
+                        <label for="searchMaterialInput">Buscar por Material:</label>
+                        <input type="text" id="searchMaterialInput" placeholder="Ej: 1000000001">
+                    </div>
+                    <button type="button" id="searchButton">Buscar Seriales</button>
+                </div>
+                <div class="label-preview-column">
+                    <h3>Resultados de Búsqueda</h3>
+                    <div id="searchResultList">
+                        </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <script>
+        // --- JAVASCRIPT INCORPORADO ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Referencias del DOM para la sección de Generación ---
+            const nomenclaturaInput = document.getElementById('nomenclatura');
+            const codigoInput = document.getElementById('codigo');
+            const materialInput = document.getElementById('material');
+            const descripcionInput = document.getElementById('descripcion');
+            const umInput = document.getElementById('um');
+            const serialManualInput = document.getElementById('serialManual');
+            const serialesPegadosInput = document.getElementById('serialesPegados');
+            const correlativoInicioInput = document.getElementById('correlativoInicio');
+            const correlativoCantidadInput = document.getElementById('correlativoCantidad');
+            const generateAndSaveButton = document.getElementById('generateAndSaveButton');
+            const generateAndPrintButton = document.getElementById('generateAndPrintButton');
+            const labelsPreviewContainer = document.getElementById('labelsPreviewContainer');
+            const serialsOutput = document.getElementById('serialsOutput'); // Para mostrar seriales generados en sesión
+
+            // --- Referencias del DOM para la sección de Búsqueda ---
+            const searchSerialInput = document.getElementById('searchSerialInput');
+            const searchMaterialInput = document.getElementById('searchMaterialInput');
+            const searchButton = document.getElementById('searchButton');
+            const searchResultList = document.getElementById('searchResultList');
+
+            // --- Referencias de las Pestañas ---
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            // --- URLs de Google Apps Script (¡ACTUALIZA ESTAS!) ---
+            // Usa la URL de tu despliegue webapp para las llamadas a Apps Script
+            const GOOGLE_APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxpd57-pTkyvk3vUnhcqTXb7scnxA0KgF83b9T8ozdoThEuF1gzndGu6p7OCRLkXLuD/exec'; 
+
+            let generatedSerialsInSession = []; // Array para guardar los seriales generados en la sesión actual
+
+            // --- Funciones de Utilidad ---
+
+            // Función para calcular y actualizar el campo Material
+            const updateMaterial = () => {
+                const nomenclatura = parseInt(nomenclaturaInput.value, 10);
+                const codigo = parseInt(codigoInput.value, 10);
+
+                if (!isNaN(nomenclatura) && nomenclaturaInput.value !== "" && 
+                    !isNaN(codigo) && codigoInput.value !== "" && codigo >= 1 && codigo <= 99999) { // Código entre 1 y 5 dígitos
+                    
+                    const materialCalculado = (nomenclatura * 1000000000) + codigo;
+                    materialInput.value = String(materialCalculado);
+                } else {
+                    materialInput.value = ''; // Limpiar si los campos no son válidos o están vacíos
+                }
+                buscarDatosMaterial();
+                buscarUltimoSerial(); // Buscar el último serial generado para este material
+            };
+
+            // Función para buscar Descripción y UM en Google Sheets
+            const buscarDatosMaterial = async () => {
+                const materialABuscar = materialInput.value;
+                
+                descripcionInput.value = 'Buscando...';
+                umInput.value = 'Buscando...';
+                
+                // Si no hay material para buscar o la URL no es válida
+                if (!materialABuscar || GOOGLE_APPS_SCRIPT_WEB_APP_URL === 'TU_URL_DE_DESPLIEGUE_DE_APPS_SCRIPT_AQUI') { // THIS IS A PLACEHOLDER
+                    descripcionInput.value = '';
+                    umInput.value = '';
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${GOOGLE_APPS_SCRIPT_WEB_APP_URL}?action=searchMaterial&material=${encodeURIComponent(materialABuscar)}`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`Error HTTP: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+
+                    if (data && data.descripcion) {
+                        descripcionInput.value = data.descripcion;
+                        umInput.value = data.um || 'N/A';
+                    } else {
+                        descripcionInput.value = 'Descripción no encontrada.';
+                        umInput.value = 'UM no encontrada.';
+                    }
+                } catch (error) {
+                    console.error('Error al buscar datos del material:', error);
+                    descripcionInput.value = 'Error al cargar la descripción.';
+                    umInput.value = 'Error al cargar UM.';
+                }
+            };
+
+            // Función para buscar el último serial registrado para el Material actual
+            const buscarUltimoSerial = async () => {
+                const materialABuscar = materialInput.value;
+                serialManualInput.placeholder = 'Cargando último serial...';
+
+                if (!materialABuscar || GOOGLE_APPS_SCRIPT_WEB_APP_URL === 'TU_URL_DE_DESPLIEGUE_DE_APPS_SCRIPT_AQUI') { // THIS IS A PLACEHOLDER
+                    serialManualInput.placeholder = 'Ej: NS270520250001';
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${GOOGLE_APPS_SCRIPT_WEB_APP_URL}?action=getLastSerial&material=${encodeURIComponent(materialABuscar)}`);
+                    if (!response.ok) {
+                        throw new Error(`Error HTTP: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    if (data && data.lastSerial) {
+                        serialManualInput.value = data.lastSerial;
+                        serialManualInput.placeholder = `Último: ${data.lastSerial}`;
+                    } else {
+                        serialManualInput.value = '';
+                        serialManualInput.placeholder = 'Ej: NS270520250001'; // O ningún serial previo
+                    }
+                } catch (error) {
+                    console.error('Error al buscar último serial:', error);
+                    serialManualInput.value = '';
+                    serialManualInput.placeholder = 'Error al cargar último serial.';
+                }
+            };
+
+
+            // Función para generar una única etiqueta HTML
+            const createLabelHtml = (material, descripcion, um, serial) => {
+                const labelDiv = document.createElement('div');
+                labelDiv.className = 'label-container';
+                labelDiv.innerHTML = `
+                    <h4>${material}</h4>
+                    <h5>${descripcion}</h5>
+                    <svg class="barcode-svg" data-serial="${serial}"></svg>
+                    <p class="serial-text">${serial}</p>
+                `;
+                return labelDiv;
+            };
+
+            // Función para renderizar el código de barras en un SVG
+            const renderBarcodeSvg = (svgElement, serialValue) => {
+                try {
+                    JsBarcode(svgElement, serialValue, {
+                        format: "CODE128",
+                        displayValue: false, // No mostrar el texto del serial debajo del código
+                        lineColor: "#000",
+                        width: 2,
+                        height: 50,
+                        margin: 0, // Sin márgenes adicionales
+                        background: "#fff"
+                    });
+                } catch (e) {
+                    console.error("Error al generar el código de barras para serial:", serialValue, e);
+                    svgElement.innerHTML = `<p style="color: red; font-size: 7px; text-align: center;">Error BC: ${serialValue}</p>`;
+                }
+            };
+
+            // Función principal para generar seriales y previsualizar etiquetas
+            const generarSerialesYEtiquetas = () => {
+                const material = materialInput.value;
+                const descripcion = descripcionInput.value;
+                const um = umInput.value;
+
+                // Validar que Material, Descripción y UM estén cargados
+                if (!material || !descripcion || !um || 
+                    descripcion.includes('Buscando') || descripcion.includes('Error')) {
+                    alert('Por favor, asegúrate de que el Material, Descripción y UM estén cargados correctamente antes de generar seriales.');
+                    return [];
+                }
+
+                labelsPreviewContainer.innerHTML = ''; // Limpiar previsualización anterior
+                const serialsToProcess = [];
+                generatedSerialsInSession = []; // Limpiar la lista de seriales generados en sesión
+
+                // 1. Serial Individual
+                const serialManual = serialManualInput.value.trim();
+                if (serialManual) {
+                    serialsToProcess.push(serialManual);
+                }
+
+                // 2. Seriales Pegados
+                const serialesPegados = serialesPegadosInput.value.trim();
+                if (serialesPegados) {
+                    const parsedSerials = serialesPegados.split('\n').map(s => s.trim()).filter(s => s !== '');
+                    serialsToProcess.push(...parsedSerials);
+                }
+
+                // 3. Seriales Correlativos
+                const correlativoInicio = correlativoInicioInput.value.trim();
+                const correlativoCantidad = parseInt(correlativoCantidadInput.value, 10);
+
+                if (correlativoInicio && correlativoCantidad > 0) {
+                    // Lógica para extraer la parte numérica final y el prefijo/sufijo
+                    const match = correlativoInicio.match(/^(.*?)([0-9]+)([^0-9]*)$/);
+                    if (match) {
+                        const prefix = match[1];
+                        let startNumber = parseInt(match[2], 10);
+                        const numDigits = match[2].length;
+                        const suffix = match[3];
+
+                        for (let i = 0; i < correlativoCantidad; i++) {
+                            const currentNumber = (startNumber + i).toString().padStart(numDigits, '0');
+                            serialsToProcess.push(`${prefix}${currentNumber}${suffix}`);
+                        }
+                    } else {
+                        alert('El serial inicial para el correlativo no tiene un patrón numérico reconocible. Por favor, asegúrate de que termine con números (ej. NS270520250001).');
+                        // Retornar [] para evitar procesar seriales incorrectos
+                        return []; 
+                    }
+                }
+
+                if (serialsToProcess.length === 0) {
+                    alert('No se ha introducido ningún serial para generar. Por favor, usa una de las opciones.');
+                    return [];
+                }
+
+                // Eliminar duplicados si es necesario (opcional, dependiendo de la lógica de negocio)
+                const uniqueSerials = [...new Set(serialsToProcess)];
+
+                // Generar previsualización y registrar para la sesión
+                uniqueSerials.forEach(serial => {
+                    const labelHtml = createLabelHtml(material, descripcion, um, serial);
+                    labelsPreviewContainer.appendChild(labelHtml);
+                    generatedSerialsInSession.push({
+                        material: material,
+                        descripcion: descripcion,
+                        um: um,
+                        serial: serial
+                    });
+                });
+
+                // Renderizar todos los códigos de barras después de que los SVG estén en el DOM
+                labelsPreviewContainer.querySelectorAll('.barcode-svg').forEach(svg => {
+                    renderBarcodeSvg(svg, svg.dataset.serial);
+                });
+
+                // Mostrar seriales generados en el área de texto
+                serialsOutput.textContent = uniqueSerials.join('\n');
+
+                return generatedSerialsInSession; // Retorna los seriales con sus datos completos
+            };
+
+            // Función para enviar datos a la hoja de "Registros" (ahora maneja múltiples seriales)
+            const enviarDatosARegistros = async (serialsToRegister) => {
+                if (serialsToRegister.length === 0) {
+                    alert('No hay seriales para registrar.');
+                    return false;
+                }
+
+                // Validaciones adicionales antes de enviar (por si algo cambió desde la generación)
+                const material = materialInput.value;
+                const descripcion = descripcionInput.value;
+                const um = umInput.value;
+
+                if (!material || !descripcion || !um || 
+                    descripcion.includes('Buscando') || descripcion.includes('Error')) {
+                    alert('Faltan datos de Material, Descripción o UM para registrar. Vuelve a cargar la información.');
+                    return false;
+                }
+                
+                // Asegurarse de que cada objeto en serialsToRegister tenga todos los campos
+                const completeData = serialsToRegister.map(s => ({
+                    material: s.material, // Asegurarse de usar los datos del objeto completo
+                    descripcion: s.descripcion,
+                    um: s.um,
+                    serial: s.serial 
+                }));
+
+                // console.log("Datos a enviar al Apps Script:", JSON.stringify({ action: 'registerSerials', data: completeData })); // Depuración
+
+                generateAndSaveButton.disabled = true;
+                generateAndPrintButton.disabled = true;
+                generateAndSaveButton.textContent = 'Enviando...';
+                generateAndPrintButton.textContent = 'Enviando...';
+
+                try {
+                    const response = await fetch(GOOGLE_APPS_SCRIPT_WEB_APP_URL, {
+                        method: 'POST', // Usamos POST para enviar datos
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ action: 'registerSerials', data: completeData }) // Enviar un array de objetos
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Error HTTP: ${response.status} - ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        alert('¡Datos registrados exitosamente en la hoja de Registros!');
+                        return true;
+                    } else {
+                        alert('Error al registrar los datos: ' + result.message);
+                        return false;
+                    }
+                } catch (error) {
+                    console.error('Error al enviar datos:', error);
+                    alert('Hubo un problema al conectar con el servidor para registrar los datos. Intenta de nuevo más tarde. Detalles: ' + error.message);
+                    return false;
+                } finally {
+                    generateAndSaveButton.disabled = false;
+                    generateAndPrintButton.disabled = false;
+                    generateAndSaveButton.textContent = 'Generar y Guardar';
+                    generateAndPrintButton.textContent = 'Generar e Imprimir';
+                }
+            };
+
+            // Función para generar e imprimir PDF
+            const generarEImprimirPDF = async (serialsData) => {
+                if (serialsData.length === 0) {
+                    alert('No hay seriales para imprimir.');
+                    return;
+                }
+
+                // Importar jsPDF (ya está en el HTML, solo asegurar que la clase esté disponible)
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({
+                    orientation: 'portrait', // Vertical
+                    unit: 'mm',
+                    format: [50, 30] // 50mm ancho x 30mm alto por página (etiqueta)
+                });
+
+                // Helper para dibujar un SVG en el PDF
+                const addSvgToPdf = (doc, svgElement, x, y, width, height) => {
+                    const serializer = new XMLSerializer();
+                    const svgString = serializer.serializeToString(svgElement);
+                    return new Promise((resolve) => {
+                        // jsPDF addImage does not directly support SVG strings, typically needs conversion
+                        // Using a simple base64 encode, but a more robust solution might use canvg or similar
+                        // For direct JsPDF SVG support, consider using a newer version or a different approach if this fails.
+                        doc.addImage(
+                            `data:image/svg+xml;base64,${btoa(svgString)}`,
+                            'SVG', // Type is important for jsPDF to try and interpret
+                            x,
+                            y,
+                            width,
+                            height,
+                            '', // Alias
+                            'FAST' // Compression
+                        );
+                        resolve(); // Resolve immediately as addImage is synchronous
+                    });
+                };
+
+
+                for (let i = 0; i < serialsData.length; i++) {
+                    const item = serialsData[i];
+                    
+                    // Crear un div temporal para generar el SVG del código de barras para cada serial
+                    // Es CRUCIAL que el SVG se genere en el DOM para JsBarcode
+                    const tempDiv = document.createElement('div');
+                    // Ocultar el div temporal para que no afecte la presentación visual
+                    tempDiv.style.cssText = 'position: absolute; left: -9999px; top: -9999px; width: 1px; height: 1px; overflow: hidden;';
+                    const tempSvg = document.createElement('svg');
+                    tempSvg.dataset.serial = item.serial; // Asociar el serial al SVG para JsBarcode
+                    tempDiv.appendChild(tempSvg);
+                    document.body.appendChild(tempDiv); // Debe estar en el DOM para que JsBarcode funcione correctamente
+
+                    renderBarcodeSvg(tempSvg, item.serial); // Renderizar el SVG del código de barras
+                    
+                    // jsPDF addImage is generally synchronous for SVG (when type is SVG)
+                    // If JsBarcode is too slow or the SVG isn't fully rendered, a small timeout or promise could be added here.
+                    // For now, assume it's fast enough.
+
+                    // Add new page for each label except the first one
+                    if (i > 0) {
+                        doc.addPage();
+                    }
+
+                    // Contenido de la etiqueta: 50mm x 30mm
+                    const page_width = doc.internal.pageSize.getWidth(); // 50mm
+                    const page_height = doc.internal.pageSize.getHeight(); // 30mm
+
+                    // Material (parte superior central)
+                    doc.setFontSize(10);
+                    doc.text(`Material: ${item.material}`, page_width / 2, 4, { align: 'center' }); // 4mm desde arriba
+
+                    // Descripción (debajo del Material)
+                    doc.setFontSize(7);
+                    // Asegúrate de que la descripción no sea demasiado larga o maneja el "word-wrap"
+                    doc.text(item.descripcion, page_width / 2, 8, { align: 'center' }); // 8mm desde arriba
+
+                    // Código de barras (centrado)
+                    // Calcula las dimensiones y posición para centrar el código de barras
+                    const barcode_width_mm = 40; // Ancho deseado del código de barras en mm
+                    const barcode_height_mm = 12; // Alto deseado del código de barras en mm
+                    const barcode_x = (page_width - barcode_width_mm) / 2;
+                    const barcode_y = 10; // Posición Y del código de barras
+
+                    await addSvgToPdf(doc, tempSvg, barcode_x, barcode_y, barcode_width_mm, barcode_height_mm);
+
+                    // Serial (debajo del código de barras)
+                    doc.setFontSize(9);
+                    doc.text(item.serial, page_width / 2, 26, { align: 'center' }); // 26mm desde arriba
+
+                    // Limpiar el SVG temporal
+                    document.body.removeChild(tempDiv);
+                }
+                
+                // Abre el PDF en una nueva pestaña
+                // Es crucial que esto se haga en una interacción directa del usuario o puede ser bloqueado
+                try {
+                    window.open(doc.output('bloburl'), '_blank');
+                } catch (e) {
+                    console.error("Error al abrir la ventana de impresión/PDF:", e);
+                    alert("El navegador bloqueó la ventana de impresión. Por favor, revisa la configuración de ventanas emergentes o inténtalo de nuevo.");
+                }
+            };
+
+            // Función para limpiar el formulario después de generar/imprimir
+            const resetForm = () => {
+                nomenclaturaInput.value = '';
+                codigoInput.value = '';
+                materialInput.value = '';
+                descripcionInput.value = '';
+                umInput.value = '';
+                serialManualInput.value = '';
+                serialesPegadosInput.value = '';
+                correlativoInicioInput.value = '';
+                correlativoCantidadInput.value = '1';
+                labelsPreviewContainer.innerHTML = '';
+                serialsOutput.textContent = '';
+                generatedSerialsInSession = []; // Limpiar los seriales en sesión
+                updateMaterial(); // Llama para limpiar estados iniciales
+            };
+
+            // --- Event Listeners para la sección de Generación ---
+            nomenclaturaInput.addEventListener('change', updateMaterial);
+            codigoInput.addEventListener('input', updateMaterial);
+            
+            // Re-generar vista previa de etiquetas cuando cambian los seriales
+            serialManualInput.addEventListener('input', generarSerialesYEtiquetas);
+            serialesPegadosInput.addEventListener('input', generarSerialesYEtiquetas);
+            correlativoInicioInput.addEventListener('input', generarSerialesYEtiquetas);
+            correlativoCantidadInput.addEventListener('input', generarSerialesYEtiquetas);
+
+
+            generateAndSaveButton.addEventListener('click', async () => {
+                const serials = generarSerialesYEtiquetas();
+                if (serials.length > 0) {
+                    const success = await enviarDatosARegistros(serials);
+                    if (success) {
+                        resetForm(); // Resetear si se guardó correctamente
+                    }
+                }
+            });
+
+            generateAndPrintButton.addEventListener('click', async () => {
+                const serials = generarSerialesYEtiquetas();
+                if (serials.length > 0) {
+                    const success = await enviarDatosARegistros(serials);
+                    if (success) {
+                        await generarEImprimirPDF(serials); // Imprimir solo si se guardó
+                        resetForm(); // Resetear después de guardar e imprimir
+                    }
+                }
+            });
+
+            // --- Event Listeners para la gestión de Pestañas ---
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.remove('active'));
+
+                    button.classList.add('active');
+                    document.getElementById(button.dataset.tab).classList.add('active');
+                    
+                    // Limpiar campos de búsqueda al cambiar a pestaña de generación
+                    if (button.dataset.tab === 'generate') {
+                        searchSerialInput.value = '';
+                        searchMaterialInput.value = '';
+                        searchResultList.innerHTML = '';
+                    } else if (button.dataset.tab === 'search') {
+                        // Opcional: Limpiar campos de generación al cambiar a búsqueda
+                        resetForm(); 
+                    }
+                });
+            });
+
+            // --- Funcionalidad de Búsqueda (Parte 2, la implementaremos en el próximo paso) ---
+            searchButton.addEventListener('click', async () => {
+                alert('La funcionalidad de búsqueda y reimpresión se implementará en el siguiente paso.');
+                // Aquí irá la lógica para buscar y mostrar los seriales registrados
+            });
+
+
+            // --- Inicialización al cargar la página ---
+            updateMaterial(); // Cargar estado inicial y autocompletar si es posible
+            // Se asume que la pestaña "Generar Etiquetas" es la activa por defecto
+        });
+    </script>
+</body>
+</html>
